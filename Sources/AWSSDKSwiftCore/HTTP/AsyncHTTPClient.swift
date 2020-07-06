@@ -13,55 +13,12 @@
 //===----------------------------------------------------------------------===//
 
 import AsyncHTTPClient
-import Foundation
 import NIO
+import NIOHTTP1
 
 /// comply with AWSHTTPClient protocol
 extension AsyncHTTPClient.HTTPClient: AWSHTTPClient {
 
-    /// write stream to StreamWriter
-    private func writeToStreamWriter(
-        writer: HTTPClient.Body.StreamWriter,
-        size: Int?,
-        on eventLoop: EventLoop,
-        getData: @escaping (EventLoop)->EventLoopFuture<ByteBuffer>) -> EventLoopFuture<Void> {
-        let promise = eventLoop.makePromise(of: Void.self)
-
-        func _writeToStreamWriter(_ amountLeft: Int?) {
-            // get byte buffer from closure, write to StreamWriter, if there are still bytes to write then call
-            // _writeToStreamWriter again.
-            _ = getData(eventLoop)
-                .map { (byteBuffer)->() in
-                    // if no amount was set and the byte buffer has no readable bytes then this is assumed to mean
-                    // there will be no more data
-                    if amountLeft == nil && byteBuffer.readableBytes == 0 {
-                        promise.succeed(())
-                        return
-                    }
-                    // calculate amount left to write
-                    let newAmountLeft = amountLeft.map { $0 - byteBuffer.readableBytes }
-                    // write chunk. If amountLeft is nil assume we are writing chunked output
-                    let writeFuture: EventLoopFuture<Void> = writer.write(.byteBuffer(byteBuffer))
-                    _ = writeFuture.flatMap { ()->EventLoopFuture<Void> in
-                        if let newAmountLeft = newAmountLeft {
-                            if newAmountLeft == 0 {
-                                promise.succeed(())
-                            } else if newAmountLeft < 0 {
-                                promise.fail(AWSClient.ClientError.tooMuchData)
-                            } else {
-                                _writeToStreamWriter(newAmountLeft)
-                            }
-                        } else {
-                            _writeToStreamWriter(nil)
-                        }
-                        return promise.futureResult
-                    }.cascadeFailure(to: promise)
-            }.cascadeFailure(to: promise)
-        }
-        _writeToStreamWriter(size)
-        return promise.futureResult
-    }
-    
     /// Execute HTTP request
     /// - Parameters:
     ///   - request: HTTP request
@@ -79,13 +36,10 @@ extension AsyncHTTPClient.HTTPClient: AWSHTTPClient {
         switch request.body.payload {
         case .byteBuffer(let byteBuffer):
             requestBody = .byteBuffer(byteBuffer)
-        case .stream(let size, let getData):
-            // add "Transfer-Encoding" header if streaming with unknown size
-            if size == nil {
-                requestHeaders.add(name: "Transfer-Encoding", value: "chunked")
-            }
-            requestBody = .stream(length: size) { writer in
-                return self.writeToStreamWriter(writer: writer, size: size, on: eventLoop, getData: getData)
+        case .stream(let reader):
+            requestHeaders = reader.updateHeaders(headers: requestHeaders)
+            requestBody = .stream(length: reader.contentSize) { writer in
+                return writer.write(reader: reader, on: eventLoop)
             }
         case .empty:
             requestBody = nil
@@ -99,4 +53,36 @@ extension AsyncHTTPClient.HTTPClient: AWSHTTPClient {
     }
 }
 
+/// extend to include response streaming support
+extension AsyncHTTPClient.HTTPClient {
+    public func execute(request: AWSHTTPRequest, timeout: TimeAmount, on eventLoop: EventLoop?, stream: @escaping ResponseStream) -> EventLoopFuture<AWSHTTPResponse> {
+        if let eventLoop = eventLoop {
+            precondition(self.eventLoopGroup.makeIterator().contains { $0 === eventLoop }, "EventLoop provided to AWSClient must be part of the HTTPClient's EventLoopGroup.")
+        }
+        let requestBody: AsyncHTTPClient.HTTPClient.Body?
+        if case .byteBuffer(let body) = request.body.payload {
+            requestBody = .byteBuffer(body)
+        } else {
+            requestBody = nil
+        }
+        do {
+            let eventLoop = eventLoop ?? eventLoopGroup.next()
+            let asyncRequest = try AsyncHTTPClient.HTTPClient.Request(url: request.url, method: request.method, headers: request.headers, body: requestBody)
+            let delegate = AWSHTTPClientResponseDelegate(host: asyncRequest.host, stream: stream)
+            return execute(request: asyncRequest, delegate: delegate, eventLoop: .delegate(on: eventLoop), deadline: .now() + timeout)
+                .futureResult
+                // temporarily wait on delegate response finishing while AHC does not do this for us. See https://github.com/swift-server/async-http-client/issues/274
+                .flatMap { response in
+                    // if delegate future 
+                    guard let futureResult = delegate.bodyPartFuture else { return eventLoop.makeSucceededFuture(response)}
+                    return futureResult.map { return response }
+            }
+        } catch {
+            return eventLoopGroup.next().makeFailedFuture(error)
+        }
+    }
+}
+
+
 extension AsyncHTTPClient.HTTPClient.Response: AWSHTTPResponse {}
+

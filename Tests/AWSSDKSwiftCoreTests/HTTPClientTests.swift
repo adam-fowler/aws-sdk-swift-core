@@ -21,15 +21,6 @@ import AWSTestUtils
 
 @testable import AWSSDKSwiftCore
 
-extension AWSHTTPResponse {
-    var bodyData: Data? {
-        if let body = self.body {
-            return body.getData(at: body.readerIndex, length: body.readableBytes, byteTransferStrategy: .noCopy)
-        }
-        return nil
-    }
-}
-
 #if canImport(Network)
 
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
@@ -87,10 +78,6 @@ class NIOTSHTTPClientTests: XCTestCase {
         HTTPClientTests(client).testGet()
     }
 
-    func testHTTPS() {
-        HTTPClientTests(client).testHTTPS()
-    }
-
     func testHeaders() {
         HTTPClientTests(client).testHeaders()
     }
@@ -101,33 +88,6 @@ class NIOTSHTTPClientTests: XCTestCase {
 }
 
 #endif //canImport(Network)
-
-class AsyncHTTPClientTests: XCTestCase {
-    var client: AsyncHTTPClient.HTTPClient!
-    override func setUp() {
-        self.client = AsyncHTTPClient.HTTPClient(eventLoopGroupProvider: .createNew)
-    }
-
-    override func tearDown() {
-        XCTAssertNoThrow(try self.client.syncShutdown())
-    }
-
-    deinit {
-        try? client.syncShutdown()
-    }
-
-    func testGet() {
-        HTTPClientTests(client).testGet()
-    }
-
-    func testHeaders() {
-        HTTPClientTests(client).testHeaders()
-    }
-
-    func testBody() {
-        HTTPClientTests(client).testBody()
-    }
-}
 
 /// HTTP Client tests, to be used with any HTTP client that conforms to AWSHTTPClient
 class HTTPClientTests {
@@ -141,8 +101,8 @@ class HTTPClientTests {
     func execute(_ request: AWSHTTPRequest) -> EventLoopFuture<AWSTestServer.HTTPBinResponse> {
         return client.execute(request: request, timeout: .seconds(5), on: client.eventLoopGroup.next())
             .flatMapThrowing { response in
-                print(String(data: response.bodyData ?? Data(), encoding: .utf8)!)
-                return try JSONDecoder().decode(AWSTestServer.HTTPBinResponse.self, from: response.bodyData ?? Data())
+                guard let body = response.body else { throw AWSTestServer.Error.emptyBody }
+                return try JSONDecoder().decode(AWSTestServer.HTTPBinResponse.self, from: body)
         }
     }
 

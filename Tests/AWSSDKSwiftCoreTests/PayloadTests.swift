@@ -21,7 +21,7 @@ class PayloadTests: XCTestCase {
 
     func testRequestPayload(_ payload: AWSPayload, expectedResult: String) {
         struct DataPayload: AWSEncodableShape & AWSShapeWithPayload {
-            static var payloadPath: String = "data"
+            static var _payloadPath: String = "data"
             let data: AWSPayload
 
             private enum CodingKeys: CodingKey {}
@@ -29,19 +29,13 @@ class PayloadTests: XCTestCase {
 
         do {
             let awsServer = AWSTestServer(serviceProtocol: .json)
-            let client = AWSClient(
-                accessKeyId: "",
-                secretAccessKey: "",
-                region: .useast1,
-                service:"TestClient",
-                serviceProtocol: .json(version: "1.1"),
-                apiVersion: "2020-01-21",
-                endpoint: awsServer.address,
-                middlewares: [AWSLoggingMiddleware()],
-                httpClientProvider: .createNew
-            )
+            let config = createServiceConfig(endpoint: awsServer.address)
+            let client = createAWSClient(credentialProvider: .empty)
+            defer {
+                XCTAssertNoThrow(try client.syncShutdown())
+            }
             let input = DataPayload(data: payload)
-            let response = client.send(operation: "test", path: "/", httpMethod: "POST", input: input)
+            let response = client.execute(operation: "test", path: "/", httpMethod: "POST", serviceConfig: config, input: input)
 
             try awsServer.processRaw { request in
                 XCTAssertEqual(request.body.getString(at: 0, length: request.body.readableBytes), expectedResult)
@@ -71,26 +65,18 @@ class PayloadTests: XCTestCase {
 
     func testResponsePayload() {
         struct Output : AWSDecodableShape, AWSShapeWithPayload {
-            static let payloadPath: String = "payload"
-            public static var _encoding = [
-                AWSMemberEncoding(label: "payload", encoding: .blob)
-            ]
+            static let _payloadPath: String = "payload"
+            static let _payloadOptions: PayloadOptions = .raw
             let payload: AWSPayload
         }
         do {
             let awsServer = AWSTestServer(serviceProtocol: .json)
-            let client = AWSClient(
-                accessKeyId: "",
-                secretAccessKey: "",
-                region: .useast1,
-                service:"TestClient",
-                serviceProtocol: .json(version: "1.1"),
-                apiVersion: "2020-01-21",
-                endpoint: awsServer.address,
-                middlewares: [AWSLoggingMiddleware()],
-                httpClientProvider: .createNew
-            )
-            let response: EventLoopFuture<Output> = client.send(operation: "test", path: "/", httpMethod: "POST")
+            let config = createServiceConfig(endpoint: awsServer.address)
+            let client = createAWSClient(credentialProvider: .empty)
+            defer {
+                XCTAssertNoThrow(try client.syncShutdown())
+            }
+            let response: EventLoopFuture<Output> = client.execute(operation: "test", path: "/", httpMethod: "POST", serviceConfig: config)
 
             try awsServer.processRaw { request in
                 var byteBuffer = ByteBufferAllocator().buffer(capacity: 0)

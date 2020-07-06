@@ -12,10 +12,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-@testable import AWSSDKSwiftCore
-import XCTest
-import NIO
+public struct CredentialProviderError: Error, Equatable {
+    enum _CredentialProviderError {
+        case noProvider
+    }
+    let error: _CredentialProviderError
 
-class ExpiringCredentialTests: XCTestCase {
+    public static var noProvider: CredentialProviderError { return .init(error: .noProvider) }
 }
-

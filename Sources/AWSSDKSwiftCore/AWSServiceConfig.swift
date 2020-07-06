@@ -13,7 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 /// Configuration class defining an AWS service
-public class ServiceConfig {
+public class AWSServiceConfig {
 
     /// Region where service is running
     public let region: Region
@@ -59,7 +59,7 @@ public class ServiceConfig {
         apiVersion: String,
         endpoint: String? = nil,
         serviceEndpoints: [String: String] = [:],
-        partitionEndpoints: [Partition: (endpoint: String, region: Region)],
+        partitionEndpoints: [Partition: (endpoint: String, region: Region)] = [:],
         possibleErrorTypes: [AWSErrorType.Type] = [],
         middlewares: [AWSServiceMiddleware] = []
     )

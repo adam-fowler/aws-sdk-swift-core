@@ -42,7 +42,7 @@ struct StandardRequest: AWSEncodableShape {
 }
 
 struct PayloadRequest: AWSEncodableShape & AWSShapeWithPayload {
-    public static let payloadPath: String = "payload"
+    public static let _payloadPath: String = "payload"
 
     let payload: StandardRequest
 }
@@ -72,169 +72,164 @@ class PerformanceTests: XCTestCase {
     
     func testHeaderRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .restxml,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
+            apiVersion: "1.0")
         let date = Date()
         let request = HeaderRequest(header1: "Header1", header2: "Header2", header3: "Header3", header4: TimeStamp(date))
         measure {
             do {
                 for _ in 0..<1000 {
-                    _ = try client.createAWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request)
+                    _ = try AWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request, configuration: config)
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("Unexpected Error: \(error.localizedDescription)")
             }
         }
     }
 
     func testXMLRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .restxml,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
+            apiVersion: "1.0")
         let date = Date()
         let request = StandardRequest(item1: "item1", item2: 45, item3: 3.14, item4: TimeStamp(date), item5: [1,2,3,4,5])
         measure {
             do {
                 for _ in 0..<1000 {
-                    _ = try client.createAWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request)
+                    _ = try AWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request, configuration: config)
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("Unexpected Error: \(error.localizedDescription)")
             }
         }
     }
 
     func testXMLPayloadRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .restxml,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
+            apiVersion: "1.0")
         let date = Date()
         let request = PayloadRequest(payload: StandardRequest(item1: "item1", item2: 45, item3: 3.14, item4: TimeStamp(date), item5: [1,2,3,4,5]))
         measure {
             do {
                 for _ in 0..<1000 {
-                    _ = try client.createAWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request)
+                    _ = try AWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request, configuration: config)
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("\(error)")
             }
         }
     }
 
     func testJSONRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .restjson,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
+            apiVersion: "1.0")
         let date = Date()
         let request = StandardRequest(item1: "item1", item2: 45, item3: 3.14, item4: TimeStamp(date), item5: [1,2,3,4,5])
         measure {
             do {
                 for _ in 0..<1000 {
-                    _ = try client.createAWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request)
+                    _ = try AWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request, configuration: config)
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("\(error)")
             }
         }
     }
 
     func testJSONPayloadRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .restjson,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
+            apiVersion: "1.0")
         let date = Date()
         let request = PayloadRequest(payload: StandardRequest(item1: "item1", item2: 45, item3: 3.14, item4: TimeStamp(date), item5: [1,2,3,4,5]))
         measure {
             do {
                 for _ in 0..<1000 {
-                    _ = try client.createAWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request)
+                    _ = try AWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request, configuration: config)
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("\(error)")
             }
         }
     }
 
     func testQueryRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .query,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
+            apiVersion: "1.0")
         let date = Date()
         let request = StandardRequest(item1: "item1", item2: 45, item3: 3.14, item4: TimeStamp(date), item5: [1,2,3,4,5])
         measure {
             do {
                 for _ in 0..<1000 {
-                    _ = try client.createAWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request)
+                    _ = try AWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request, configuration: config)
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("\(error)")
             }
         }
     }
 
     func testUnsignedRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
-            accessKeyId: "",
-            secretAccessKey: "",
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .json(version: "1.1"),
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
-        let awsRequest = try! client.createAWSRequest(operation: "Test", path: "/", httpMethod: "GET")
-        let signer = try! client.signer.wait()
+            apiVersion: "1.0")
+        
+        let request = try! AWSRequest(
+            operation: "Test",
+            path: "/",
+            httpMethod: "GET",
+            configuration: config)
+        
+        let signer = AWSSigner(
+            credentials: StaticCredential(accessKeyId: "", secretAccessKey: ""),
+            name: config.service,
+            region: config.region.rawValue)
         measure {
             for _ in 0..<1000 {
-                _ = awsRequest.createHTTPRequest(signer: signer)
+                _ = request.createHTTPRequest(signer: signer)
             }
         }
     }
 
     func testSignedURLRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
-            accessKeyId: "MyAccessKeyId",
-            secretAccessKey: "MySecretAccessKey",
-            region: .useast1,
-            service:"Test",
-            serviceProtocol: .json(version: "1.1"),
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
-        let awsRequest = try! client.createAWSRequest(operation: "Test", path: "/", httpMethod: "GET")
-        let signer = try! client.signer.wait()
+        let config = createServiceConfig()
+        let client = createAWSClient(credentialProvider: .static(accessKeyId: "MyAccessKeyId", secretAccessKey: "MySecretAccessKey"))
+        defer {
+            XCTAssertNoThrow(try client.syncShutdown())
+        }
+        let awsRequest = try! AWSRequest(
+            operation: "Test",
+            path: "/",
+            httpMethod: "GET",
+            configuration: config
+        ).applyMiddlewares(config.middlewares + client.middlewares)
+        
+        let signer = try! client.createSigner(serviceConfig: config).wait()
         measure {
             for _ in 0..<1000 {
                 _ = awsRequest.createHTTPRequest(signer: signer)
@@ -244,19 +239,18 @@ class PerformanceTests: XCTestCase {
 
     func testSignedHeadersRequest() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
-            accessKeyId: "MyAccessKeyId",
-            secretAccessKey: "MySecretAccessKey",
+        let config = createServiceConfig(
             region: .useast1,
             service:"Test",
             serviceProtocol: .json(version: "1.1"),
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
+            apiVersion: "1.0")
         let date = Date()
         let request = StandardRequest(item1: "item1", item2: 45, item3: 3.14, item4: TimeStamp(date), item5: [1,2,3,4,5])
-        let awsRequest = try! client.createAWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request)
-        let signer = try! client.signer.wait()
+        let awsRequest = try! AWSRequest(operation: "Test", path: "/", httpMethod: "POST", input: request, configuration: config)
+        let signer = AWSSigner(
+            credentials: StaticCredential(accessKeyId: "", secretAccessKey: ""),
+            name: config.service,
+            region: config.region.rawValue)
         measure {
             for _ in 0..<1000 {
                 _ = awsRequest.createHTTPRequest(signer: signer)
@@ -266,13 +260,6 @@ class PerformanceTests: XCTestCase {
 
     func testValidateXMLResponse() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
-            region: .useast1,
-            service:"Test",
-            serviceProtocol: .restxml,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
         var buffer = ByteBufferAllocator().buffer(capacity: 0)
         buffer.writeString("<Output><item1>Hello</item1><item2>5</item2><item3>3.141</item3><item4>2001-12-23T15:34:12.590Z</item4><item5>3</item5><item5>6</item5><item5>325</item5></Output>")
         let response = HTTPClient.Response(
@@ -281,26 +268,21 @@ class PerformanceTests: XCTestCase {
             headers: HTTPHeaders(),
             body: buffer
         )
+
         measure {
             do {
                 for _ in 0..<1000 {
-                    let _: StandardResponse = try client.validate(operation: "Output", response: response)
+                    let awsResponse = try AWSResponse(from: response, serviceProtocol: .restxml, raw: false)
+                    let _: StandardResponse = try awsResponse.generateOutputShape(operation: "Test")
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("\(error)")
             }
         }
     }
 
     func testValidateJSONResponse() {
         guard Self.enableTimingTests == true else { return }
-        let client = AWSClient(
-            region: .useast1,
-            service:"Test",
-            serviceProtocol: .restjson,
-            apiVersion: "1.0",
-            httpClientProvider: .createNew
-        )
         var buffer = ByteBufferAllocator().buffer(capacity: 0)
         buffer.writeString("{\"item1\":\"Hello\", \"item2\":5, \"item3\":3.14, \"item4\":\"2001-12-23T15:34:12.590Z\", \"item5\": [1,56,3,7]}")
         let response = HTTPClient.Response(
@@ -312,10 +294,11 @@ class PerformanceTests: XCTestCase {
         measure {
             do {
                 for _ in 0..<1000 {
-                    let _: StandardResponse = try client.validate(operation: "Output", response: response)
+                    let awsResponse = try AWSResponse(from: response, serviceProtocol: .restjson, raw: false)
+                    let _: StandardResponse = try awsResponse.generateOutputShape(operation: "Test")
                 }
             } catch {
-                XCTFail(error.localizedDescription)
+                XCTFail("\(error)")
             }
         }
     }

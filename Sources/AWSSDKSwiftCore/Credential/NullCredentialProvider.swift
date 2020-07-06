@@ -12,10 +12,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-@testable import AWSSDKSwiftCore
-import XCTest
 import NIO
+import AWSSignerV4
 
-class ExpiringCredentialTests: XCTestCase {
+ /// Credential provider that always fails
+public struct NullCredentialProvider: CredentialProvider {
+    public func getCredential(on eventLoop: EventLoop) -> EventLoopFuture<Credential> {
+        return eventLoop.makeFailedFuture(CredentialProviderError.noProvider)
+    }
 }
-

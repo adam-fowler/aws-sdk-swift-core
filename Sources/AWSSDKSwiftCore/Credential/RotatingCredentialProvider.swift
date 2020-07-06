@@ -28,9 +28,17 @@ public final class RotatingCredentialProvider<Client: CredentialProvider>: Crede
     private var credential      : Credential? = nil
     private var credentialFuture: EventLoopFuture<Credential>? = nil
 
-    init(eventLoop: EventLoop, client: Client, remainingTokenLifetimeForUse: TimeInterval? = nil) {
+    public init(eventLoop: EventLoop, client: Client, remainingTokenLifetimeForUse: TimeInterval? = nil) {
         self.client = client
         self.remainingTokenLifetimeForUse = remainingTokenLifetimeForUse ?? 3 * 60
+    }
+    
+    public func syncShutdown() throws {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        if let future = credentialFuture {
+            _ = try future.wait()
+        }
     }
     
     public func getCredential(on eventLoop: EventLoop) -> EventLoopFuture<Credential> {
