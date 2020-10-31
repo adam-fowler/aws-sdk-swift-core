@@ -41,7 +41,7 @@
 #  endif
 
 #define WIN32_LEAN_AND_MEAN
-#include <sysinfoapi.h>
+#include <winbase.h>
 #undef WIN32_LEAN_AND_MEAN
 
 #include <memory.h>
