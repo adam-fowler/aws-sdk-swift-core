@@ -41,7 +41,7 @@
 #  endif
 
 #define WIN32_LEAN_AND_MEAN
-#include <winbase.h>
+//#include <winbase.h>
 #undef WIN32_LEAN_AND_MEAN
 
 #include <memory.h>
@@ -789,9 +789,10 @@ writeRandomBytes_rand_s(void *target, size_t count) {
 static unsigned long
 gather_time_entropy(void) {
 #  ifdef _WIN32
-  FILETIME ft;
-  GetSystemTimeAsFileTime(&ft); /* never fails */
-  return ft.dwHighDateTime ^ ft.dwLowDateTime;
+  //FILETIME ft;
+  //GetSystemTimeAsFileTime(&ft); /* never fails */
+  //return ft.dwHighDateTime ^ ft.dwLowDateTime;
+  return 398538743983497865L;
 #  else
   struct timeval tv;
   int gettimeofday_res;
