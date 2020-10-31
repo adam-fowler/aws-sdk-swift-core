@@ -39,6 +39,14 @@
 #  if ! defined(_CRT_RAND_S)
 #    define _CRT_RAND_S
 #  endif
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
+
+#include <memory.h>
+#include <string.h>
+
 #endif
 
 #include <stddef.h>
